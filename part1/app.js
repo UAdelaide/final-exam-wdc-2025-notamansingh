@@ -36,7 +36,7 @@ let db;
       password: ''
     });
 
-    // Create the database if it doesn't exist
+    // Create the db if it doesn't exist
     await connection.query('CREATE DATABASE IF NOT EXISTS dogwalks');
     await connection.end();
 
