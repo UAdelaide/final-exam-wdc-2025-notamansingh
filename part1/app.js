@@ -47,10 +47,6 @@ let db;
       database: 'dogwalks',
       multipleStatements: true
     });
-    const schemaPath = path.join(__dirname, 'dogwalks.sql');
-    const schemaSql = fs.readFileSync(schemaPath, 'utf8');
-    await db.query(schemaSql);
-
     const sql = fs.readFileSync(path.join(__dirname, 'dogwalks.sql'), 'utf8');
     await db.query(sql);
 
