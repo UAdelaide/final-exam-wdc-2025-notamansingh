@@ -36,11 +36,11 @@ let db;
       password: ''
     });
 
-    // Create the db if it doesn't exist
+    // Create the db
     await connection.query('CREATE DATABASE IF NOT EXISTS dogwalks');
     await connection.end();
 
-    // Now connect to the created database
+    // connect to db
     db = await mysql.createConnection({
       host: 'localhost',
       user: 'root',
