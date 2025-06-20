@@ -63,7 +63,6 @@ let db;
           ('alice123','alice@example.com','hash1','owner'),
           ('carol123','carol@example.com','hash2','owner'),
           ('bobwalker','bob@example.com','hash3','walker'),
-          ('aaa','aaa@example.com','hash34','walker'),
           ('newwalker','new@example.com','hash4','walker')
       `);
       await db.query(`
