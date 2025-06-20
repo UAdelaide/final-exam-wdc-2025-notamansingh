@@ -36,7 +36,7 @@ let db;
     });
 
     // Create the database if it doesn't exist
-    await connection.query('CREATE DATABASE IF NOT EXISTS testdb');
+    await connection.query('CREATE DATABASE IF NOT EXISTS dogwalks');
     await connection.end();
 
     // Now connect to the created database
@@ -51,58 +51,109 @@ let db;
     const schemaSql = fs.readFileSync(schemaPath, 'utf8');
     await db.query(schemaSql);
 
-    // Create a table if it doesn't exist
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS books (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        title VARCHAR(255),
-        author VARCHAR(255)
-      )
-    `);
+    const sql = fs.readFileSync(path.join(__dirname, 'dogwalks.sql'), 'utf8');
+    await db.query(sql);
 
-    // Insert data if table is empty
-    const [rows] = await db.execute('SELECT COUNT(*) AS count FROM books');
-    if (rows[0].count === 0) {
-      await db.execute(`
-        INSERT INTO books (title, author) VALUES
-        ('1984', 'George Orwell'),
-        ('To Kill a Mockingbird', 'Harper Lee'),
-        ('Brave New World', 'Aldous Huxley')
+    const [[{ cnt }]] = await db.query('SELECT COUNT(*) AS cnt FROM Users');
+    if (cnt === 0) {
+      await db.query(`
+        INSERT INTO Users (username, email, password_hash, role)
+        VALUES
+          ('alice123','alice@example.com','hash1','owner'),
+          ('carol123','carol@example.com','hash2','owner'),
+          ('bobwalker','bob@example.com','hash3','walker'),
+          ('newwalker','new@example.com','hash4','walker')
+      `);
+      await db.query(`
+        INSERT INTO Dogs (owner_id, name, size)
+        VALUES
+          ((SELECT user_id FROM Users WHERE username='alice123'), 'Max', 'medium'),
+          ((SELECT user_id FROM Users WHERE username='carol123'), 'Bella', 'small')
+      `);
+      await db.query(`
+        INSERT INTO WalkRequests (dog_id, requested_time, duration_minutes, location, status)
+        VALUES
+          ((SELECT dog_id FROM Dogs WHERE name='Max'), '2025-06-10 08:00:00', 30, 'Parklands', 'open'),
+          ((SELECT dog_id FROM Dogs WHERE name='Bella'), '2025-06-11 10:30:00', 45, 'Beachside Ave', 'open')
+      `);
+      await db.query(`
+        INSERT INTO WalkRatings (request_id, walker_id, owner_id, rating, comments)
+        VALUES
+          (
+            1,
+            (SELECT user_id FROM Users WHERE username='bobwalker'),
+            (SELECT user_id FROM Users WHERE username='alice123'),
+            5,
+            'Great!'
+          ),
+          (
+            2,
+            (SELECT user_id FROM Users WHERE username='bobwalker'),
+            (SELECT user_id FROM Users WHERE username='carol123'),
+            4,
+            'Good job'
+          )
       `);
     }
   } catch (err) {
-    console.error('Error setting up database. Ensure Mysql is running: service mysql start', err);
+    console.error(err);
+    process.exit(1);
   }
 })();
 
-// Route to return books as JSON
-app.get('/', async (req, res) => {
+app.get('/api/dogs', async (req, res) => {
   try {
-    const [books] = await db.execute('SELECT * FROM books');
-    res.json(books);
+    const [rows] = await db.query(`
+      SELECT d.name AS dog_name, d.size, u.username AS owner_username
+      FROM Dogs d
+      JOIN Users u ON d.owner_id = u.user_id
+    `);
+    res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch books' });
+    res.status(500).json({ error: 'Failed to fetch dogs' });
   }
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
-
-module.exports = app;
-
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  next(createError(404));
+app.get('/api/walkrequests/open', async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT wr.request_id, d.name AS dog_name, wr.requested_time,
+             wr.duration_minutes, wr.location, u.username AS owner_username
+      FROM WalkRequests wr
+      JOIN Dogs d ON wr.dog_id = d.dog_id
+      JOIN Users u ON d.owner_id = u.user_id
+      WHERE wr.status = 'open'
+    `);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch open walk requests' });
+  }
 });
 
-// error handler
-app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
+app.get('/api/walkers/summary', async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT u.username AS walker_username,
+             COUNT(r.rating_id) AS total_ratings,
+             AVG(r.rating) AS average_rating,
+             COUNT(r.rating_id) AS completed_walks
+      FROM Users u
+      LEFT JOIN WalkRatings r ON u.user_id = r.walker_id
+      WHERE u.role = 'walker'
+      GROUP BY u.username
+    `);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch walker summaries' });
+  }
+});
 
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error');
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not Found' });
+});
+
+app.use((err, req, res, next) => {
+  res.status(err.status || 500).json({ error: err.message });
 });
 
 module.exports = app;
