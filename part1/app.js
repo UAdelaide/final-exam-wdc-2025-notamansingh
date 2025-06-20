@@ -1,5 +1,4 @@
 var createError = require('http-errors');
-const mysql = require('mysql2/promise');
 var express = require('express');
 const fs = require('fs');
 var path = require('path');
@@ -68,18 +67,27 @@ let db;
       await db.query(`
         INSERT INTO Dogs (owner_id, name, size)
         VALUES
-          ((SELECT user_id FROM Users WHERE username='carol123'), 'Dennis', 'Large')
+          ((SELECT user_id FROM Users WHERE username='alice123'), 'Max', 'medium'),
+          ((SELECT user_id FROM Users WHERE username='carol123'), 'Bella', 'small')
       `);
       await db.query(`
         INSERT INTO WalkRequests (dog_id, requested_time, duration_minutes, location, status)
         VALUES
-          ((SELECT dog_id FROM Dogs WHERE name='Dennis'), '2025-06-10 08:00:00', 30, 'Parklands', 'open')
+          ((SELECT dog_id FROM Dogs WHERE name='Max'), '2025-06-10 08:00:00', 30, 'Parklands', 'open'),
+          ((SELECT dog_id FROM Dogs WHERE name='Bella'), '2025-06-11 10:30:00', 45, 'Beachside Ave', 'open')
       `);
       await db.query(`
         INSERT INTO WalkRatings (request_id, walker_id, owner_id, rating, comments)
         VALUES
           (
             1,
+            (SELECT user_id FROM Users WHERE username='bobwalker'),
+            (SELECT user_id FROM Users WHERE username='alice123'),
+            5,
+            'Great!'
+          ),
+          (
+            2,
             (SELECT user_id FROM Users WHERE username='bobwalker'),
             (SELECT user_id FROM Users WHERE username='carol123'),
             4,
@@ -136,7 +144,7 @@ app.get('/api/walkers/summary', async (req, res) => {
     `);
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch walker summary' });
+    res.status(500).json({ error: 'Failed to fetch walker summaries' });
   }
 });
 
