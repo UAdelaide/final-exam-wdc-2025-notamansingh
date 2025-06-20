@@ -43,7 +43,7 @@ let db;
       host: 'localhost',
       user: 'root',
       password: '',
-      database: 'dogwalk'
+      database: 'dogwalks'
     });
 
     // Create a table if it doesn't exist
