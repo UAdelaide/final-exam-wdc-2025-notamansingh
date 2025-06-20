@@ -50,8 +50,8 @@ let db;
     const sql = fs.readFileSync(path.join(__dirname, 'dogwalks.sql'), 'utf8');
     await db.query(sql);
 
-    const [[{ cnt }]] = await db.query('SELECT COUNT(*) AS cnt FROM Users');
-    if (cnt === 0) {
+    const [[{ count }]] = await db.query('SELECT COUNT(*) AS count FROM Users');
+    if (count === 0) {
       await db.query(`
         INSERT INTO Users (username, email, password_hash, role)
         VALUES
