@@ -47,6 +47,13 @@ let db;
       multipleStatements: true
     });
 
+      // 3. Read and execute dogwalks.sql to create tables
+    //    Ensure dogwalks.sql is in the same directory as app.js
+    const schemaPath = path.join(__dirname, 'dogwalks.sql');
+    const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+    // Execute all statements in the SQL file. dogwalks.sql should contain CREATE TABLE ... statements, etc.
+    await db.query(schemaSql);
+
     // Create a table if it doesn't exist
     await db.execute(`
       CREATE TABLE IF NOT EXISTS books (
