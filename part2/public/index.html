@@ -37,6 +37,7 @@
         };
       },
       methods: {
+
         async handleLogin() {
           this.loginError = '';
           try {
@@ -46,6 +47,7 @@
               body: JSON.stringify(this.loginForm)
             });
             const result = await res.json();
+            console.log("result is ",result)
             if (!res.ok) throw new Error(result.error || 'Login failed');
             if (result.user.role === 'owner') {
               window.location.href = 'owner-dashboard.html';

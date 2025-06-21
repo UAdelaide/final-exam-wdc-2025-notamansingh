@@ -5,10 +5,13 @@ const db = require('../models/db');
 // GET all users (for admin/testing)
 router.get('/', async (req, res) => {
   try {
+    console.log('Testing database connection...');
     const [rows] = await db.query('SELECT user_id, username, email, role FROM Users');
+    console.log('Found users:', rows);
     res.json(rows);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch users' });
+    console.error('Database error:', error);
+    res.status(500).json({ error: 'Failed to fetch users: ' + error.message });
   }
 });
 
@@ -35,24 +38,43 @@ router.get('/me', (req, res) => {
   res.json(req.session.user);
 });
 
+// GET dogs for a specific user
+router.get('/:userId/dogs', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const [dogs] = await db.query('SELECT dog_id, name FROM Dogs WHERE owner_id = ?', [userId]);
+    res.json(dogs);
+  } catch (error) {
+    console.error('Failed to fetch dogs for user:', error);
+    res.status(500).json({ error: 'Failed to fetch dogs.' });
+  }
+});
+
 // POST login (dummy version)
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
   try {
+    console.log('Login attempt for username:', username);
     const [rows] = await db.query(`
-      SELECT user_id, username, role FROM Users
-      WHERE username = ? AND password_hash = ?
+      SELECT user_id, email, role FROM Users
+      WHERE email = ? AND password_hash = ?
     `, [username, password]);
+
+    console.log('Query result:', rows);
 
     if (rows.length === 0) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    // Store user in session
+    req.session.user = rows[0];
+    console.log('Session created for user:', rows[0]);
+
     res.json({ message: 'Login successful', user: rows[0] });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Login failed' });
+    res.status(500).json({ error: 'Login failed: ' + error.message });
   }
 });
 

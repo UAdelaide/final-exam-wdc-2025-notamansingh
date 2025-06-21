@@ -22,8 +22,13 @@
       <div class="card-body">
         <form @submit.prevent="submitWalkRequest">
           <div class="mb-3">
-            <label class="form-label">Dog ID</label>
-            <input v-model="form.dog_id" type="number" class="form-control" required>
+            <label for="dog-select" class="form-label">Select Your Dog</label>
+            <select v-model="form.dog_id" id="dog-select" class="form-select" required>
+              <option disabled value="">-- Choose a dog --</option>
+              <option v-for="dog in ownerDogs" :key="dog.dog_id" :value="dog.dog_id">
+                {{ dog.name }}
+              </option>
+            </select>
           </div>
           <div class="mb-3">
             <label class="form-label">Requested Date & Time</label>
@@ -46,7 +51,7 @@
     <div v-if="message" class="alert alert-info">{{ message }}</div>
     <div v-if="error" class="alert alert-danger">{{ error }}</div>
 
-    <!-- List of walk requests -->
+    <!-- Walk requests -->
     <h2 class="mb-3">My Walk Requests</h2>
     <div class="row" v-if="walks.length > 0">
       <div class="col-md-6 mb-4" v-for="walk in walks" :key="walk.request_id">
@@ -80,6 +85,8 @@
         });
 
         const walks = ref([]);
+        const ownerDogs = ref([]);
+        const user = ref(null);
         const message = ref('');
         const error = ref('');
 
@@ -102,6 +109,24 @@
             walks.value = await res.json();
           } catch (err) {
             error.value = 'Failed to load walk requests';
+          }
+        }
+
+        async function fetchOwnerData() {
+          try {
+            // Get current user
+            const userRes = await fetch('/api/users/me');
+            if (!userRes.ok) throw new Error('Could not fetch user data.');
+            user.value = await userRes.json();
+            
+            // Get user's dogs
+            if (user.value && user.value.user_id) {
+              const dogsRes = await fetch(`/api/users/${user.value.user_id}/dogs`);
+              if (!dogsRes.ok) throw new Error('Could not fetch dogs.');
+              ownerDogs.value = await dogsRes.json();
+            }
+          } catch (err) {
+            error.value = err.message;
           }
         }
 
@@ -132,12 +157,14 @@
         }
 
         onMounted(() => {
+          fetchOwnerData();
           loadWalks();
         });
 
         return {
           form,
           walks,
+          ownerDogs,
           message,
           error,
           submitWalkRequest,
