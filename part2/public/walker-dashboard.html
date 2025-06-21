@@ -46,7 +46,17 @@
         const walks = ref([]);
         const message = ref('');
         const error = ref('');
-        const user = 3;
+        const user = ref(null);
+
+        async function getCurrentUser() {
+          try {
+            const res = await fetch('/api/users/me');
+            if (!res.ok) throw new Error('Could not fetch user data.');
+            user.value = await res.json();
+          } catch (err) {
+            error.value = err.message;
+          }
+        }
 
         async function handleLogout() {
           try {
@@ -72,11 +82,15 @@
         }
 
         async function applyToWalk(requestId) {
+          if (!user.value || !user.value.user_id) {
+            error.value = 'Could not identify current user. Please log in again.';
+            return;
+          }
           try {
             const res = await fetch(`/api/walks/${requestId}/apply`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ walker_id: user })
+              body: JSON.stringify({ walker_id: user.value.user_id })
             });
             const result = await res.json();
 
@@ -91,6 +105,7 @@
         }
 
         onMounted(() => {
+          getCurrentUser();
           loadWalkRequests();
         });
 

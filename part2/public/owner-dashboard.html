@@ -31,8 +31,8 @@
             </select>
           </div>
           <div class="mb-3">
-            <label class="form-label">Requested Date & Time</label>
-            <input v-model="form.requested_time" type="datetime-local" class="form-control" required>
+            <label for="datetime-input" class="form-label">Requested Date & Time</label>
+            <input ref="datetimeInput" @click="openPicker" v-model="form.requested_time" type="datetime-local" class="form-control" id="datetime-input" required>
           </div>
           <div class="mb-3">
             <label class="form-label">Duration (minutes)</label>
@@ -89,6 +89,17 @@
         const user = ref(null);
         const message = ref('');
         const error = ref('');
+        const datetimeInput = ref(null);
+
+        function openPicker() {
+          if (datetimeInput.value) {
+            try {
+              datetimeInput.value.showPicker();
+            } catch (e) {
+              console.error("showPicker() failed, falling back to default browser behavior.", e);
+            }
+          }
+        }
 
         async function handleLogout() {
           try {
@@ -168,7 +179,9 @@
           message,
           error,
           submitWalkRequest,
-          handleLogout
+          handleLogout,
+          datetimeInput,
+          openPicker
         };
       }
     }).mount('#app');

@@ -9,20 +9,54 @@
 </head>
 <body class="bg-light">
 
-  <div id="app" class="d-flex align-items-center justify-content-center min-vh-100">
-    <div class="text-center" style="width: 100%; max-width: 400px;">
+  <div class="container" style="max-width: 800px; margin-top: 2rem; margin-bottom: 2rem;">
+    <div class="text-center">
       <h1 class="mb-4 text-primary">{{ message }}</h1>
-      <p class="lead">Connect with trusted walkers for your beloved dog!</p>
+    </div>
 
-      <div class="mb-4">
-        <input v-model="loginForm.username" type="text" placeholder="Username" class="form-control mb-2">
-        <input v-model="loginForm.password" type="password" placeholder="Password" class="form-control mb-2">
-        <button class="btn btn-primary w-100" @click="handleLogin">Login</button>
-        <div class="text-danger mt-2" v-if="loginError">{{ loginError }}</div>
+    <!-- Login Form -->
+    <div class="row justify-content-center mb-5">
+      <div class="col-md-8 col-lg-6">
+        <form @submit.prevent="handleLogin">
+          <div class="mb-2">
+            <label for="username" class="form-label">Username</label>
+            <input v-model="loginForm.username" type="text" class="form-control" id="username" required>
+          </div>
+          <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <input v-model="loginForm.password" type="password" class="form-control" id="password" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Log In</button>
+          <div class="text-danger mt-2" v-if="loginError">{{ loginError }}</div>
+        </form>
       </div>
+    </div>
 
-      <!-- <a href="owner-dashboard.html" class="btn btn-outline-primary me-2">Owner Dashboard</a>
-      <a href="walker-dashboard.html" class="btn btn-outline-success">Walker Dashboard</a> -->
+    <!-- Dogs Table -->
+    <h2 class="text-center mb-4">All Registered Dogs</h2>
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <thead>
+          <tr>
+            <th>Dog ID</th>
+            <th>Name</th>
+            <th>Size</th>
+            <th>Owner ID</th>
+            <th>Photo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="dog in dogs" :key="dog.dog_id">
+            <td>{{ dog.dog_id }}</td>
+            <td>{{ dog.name }}</td>
+            <td class="text-capitalize">{{ dog.size }}</td>
+            <td>{{ dog.owner_id }}</td>
+            <td>
+              <img :src="dog.imageUrl" style="width: 100px; height: auto; object-fit: cover;" alt="A random dog">
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
@@ -33,10 +67,29 @@
         return {
           message: 'Welcome to the Dog Walking Service!',
           loginForm: { username: '', password: '' },
-          loginError: ''
+          loginError: '',
+          dogs: []
         };
       },
       methods: {
+        async fetchDogsAndPhotos() {
+          try {
+            const res = await fetch('/api/dogs');
+            if (!res.ok) throw new Error('Failed to fetch dogs');
+            const dogsData = await res.json();
+
+            this.dogs = await Promise.all(dogsData.map(async (dog) => {
+              const photoRes = await fetch('https://dog.ceo/api/breeds/image/random');
+              const photoData = await photoRes.json();
+              return {
+                ...dog,
+                imageUrl: photoData.status === 'success' ? photoData.message : 'images/logo.png'
+              };
+            }));
+          } catch (error) {
+            console.error(error);
+          }
+        },
 
         async handleLogin() {
           this.loginError = '';
@@ -60,6 +113,9 @@
             this.loginError = err.message;
           }
         }
+      },
+      created() {
+        this.fetchDogsAndPhotos();
       }
     }).mount('#app');
   </script>
