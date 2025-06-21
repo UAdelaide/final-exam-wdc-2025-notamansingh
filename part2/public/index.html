@@ -10,15 +10,16 @@
 <body class="bg-light">
 
   <div id="app" class="container" style="max-width: 800px; margin-top: 2rem; margin-bottom: 2rem;">
+    <div class="text-center">
+      <div class="text-start d-inline-block">
+        <h1 class="mb-2 text-primary">{{ message }}</h1>
+        <p class="lead">Connect with trusted walkers for your beloved dog!</p>
+      </div>
+    </div>
+
     <!-- Login Form -->
     <div class="row justify-content-center mb-5">
-      <div class="col-md-4">
-        <div class="text-start">
-          <h1 class="mb-2 text-primary">{{ message }}</h1>
-          <p class="lead">Connect with trusted walkers for your beloved dog!</p>
-        </div>
-      </div>
-      <div class="col-md-6">
+      <div class="col-md-8 col-lg-6">
         <form @submit.prevent="handleLogin">
           <div class="mb-2">
             <label for="username" class="form-label">Username</label>
